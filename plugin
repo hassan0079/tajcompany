@@ -1,0 +1,260 @@
+<?php
+
+
+
+function resize_img($img, $w, $h, $newfilename)
+{
+	 
+	 //Check if GD extension is loaded
+	 if (!extension_loaded('gd') && !extension_loaded('gd2')) {
+		  trigger_error("GD is not loaded", E_USER_WARNING);
+		  return false;
+	 }
+	 
+	 //Get Image size info
+	 $imgInfo = getimagesize($img);
+	 switch ($imgInfo[2]) {
+		  case 1: $im = imagecreatefromgif($img); break;
+		  case 2: $im = imagecreatefromjpeg($img);  break;
+		  case 3: $im = imagecreatefrompng($img); break;
+		  default:  trigger_error('Unsupported filetype!', E_USER_WARNING);  break;
+	 }
+	 
+	 //If image dimension is smaller, do not resize
+	 if ($imgInfo[0] <= $w && $imgInfo[1] <= $h) {
+	  $nHeight = $imgInfo[1];
+	  $nWidth = $imgInfo[0];
+	 }else{
+					//yeah, resize it, but keep it proportional
+	  if ($w/$imgInfo[0] > $h/$imgInfo[1]) {
+	   $nWidth = $w;
+	   $nHeight = $imgInfo[1]*($w/$imgInfo[0]);
+	  }else{
+	   $nWidth = $imgInfo[0]*($h/$imgInfo[1]);
+	   $nHeight = $h;
+	  }
+	 }
+	 $nWidth = round($nWidth);
+	 $nHeight = round($nHeight);
+	 
+	 $newImg = imagecreatetruecolor($nWidth, $nHeight);
+	 
+	
+	 if(($imgInfo[2] == 1) OR ($imgInfo[2]==3)){
+	  imagealphablending($newImg, false);
+	  imagesavealpha($newImg,true);
+	  $transparent = imagecolorallocatealpha($newImg, 255, 255, 255, 127);
+	  imagefilledrectangle($newImg, 0, 0, $nWidth, $nHeight, $transparent);
+	 }
+	 imagecopyresampled($newImg, $im, 0, 0, 0, 0, $nWidth, $nHeight, $imgInfo[0], $imgInfo[1]);
+	 
+	 //Generate the file, and rename it to $newfilename
+	 switch ($imgInfo[2]) {
+	  case 1: imagegif($newImg,$newfilename); break;
+	  case 2: imagejpeg($newImg,$newfilename);  break;
+	  case 3: imagepng($newImg,$newfilename); break;
+	  default:  trigger_error('Failed resize image!', E_USER_WARNING);  break;
+	 }
+}
+
+function tajsols_products_fn() {
+
+	
+	
+	
+	
+	
+	
+
+function agp_process_wooimage($files, $post_id)
+{
+	$attachment_ids		=	"";
+	foreach ($files as  $image_url)
+	{	
+		$upload_dir = wp_upload_dir();
+		$image_data = file_get_contents($image_url);
+		$filename = basename($image_url);
+		if(wp_mkdir_p($upload_dir['path']))     $file = $upload_dir['path'] . '/' . $filename;
+		else                                    $file = $upload_dir['basedir'] . '/' . $filename;
+		file_put_contents($file, $image_data);
+	
+		resize_img($file, "800", "800", $file);
+		$wp_filetype = wp_check_filetype($filename, null );
+		$attachment = array(
+			'post_mime_type' => $wp_filetype['type'],
+			'post_title' => sanitize_file_name($filename),
+			'post_content' => '',
+			'post_status' => 'inherit'
+		);
+		$attachment_ids .= wp_insert_attachment( $attachment, $file, $post_id ).",";
+		
+	
+	}
+	$attachment_ids		=	trim($attachment_ids	,",");	
+	
+	
+	update_post_meta($post_id, '_product_image_gallery', $attachment_ids);
+
+}
+
+function Generate_Featured_Image( $image_url, $post_id )
+{
+    
+	
+	$upload_dir = wp_upload_dir();
+	$image_data = file_get_contents($image_url);
+	$filename = basename($image_url);
+	if(wp_mkdir_p($upload_dir['path']))     $file = $upload_dir['path'] . '/' . $filename;
+	else                                    $file = $upload_dir['basedir'] . '/' . $filename;
+	file_put_contents($file, $image_data);
+
+	resize_img($file, "800", "800", $file);
+	
+	$wp_filetype = wp_check_filetype($filename, null );
+	$attachment = array(
+		'post_mime_type' => $wp_filetype['type'],
+		'post_title' => sanitize_file_name($filename),
+		'post_content' => '',
+		'post_status' => 'inherit'
+	);
+	$attach_id = wp_insert_attachment( $attachment, $file, $post_id );
+	require_once(ABSPATH . 'wp-admin/includes/image.php');
+	$attach_data = wp_generate_attachment_metadata( $attach_id, $file );
+	$res1= wp_update_attachment_metadata( $attach_id, $attach_data );
+	$res2= set_post_thumbnail( $post_id, $attach_id );
+	
+}	
+	
+	
+	
+	
+	
+	
+	
+		ini_set('max_execution_time', 0); 
+		
+	
+		$agent	= 	'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0'; 
+		$url	=	'http://www.tajsols.com/taj_products_api.php?token=abc123';
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		curl_setopt($ch, CURLOPT_VERBOSE, true);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+						
+		
+		curl_setopt($ch, CURLOPT_USERAGENT, $agent);
+		curl_setopt($ch, CURLOPT_URL,$url);
+		curl_setopt($ch, CURLOPT_MAXREDIRS , 5);
+		
+		
+		
+		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, TRUE);
+		
+		
+		
+		session_write_close();
+		$result = curl_exec($ch);
+		
+		if($errno = curl_errno($ch)) {
+			$error_message = curl_strerror($errno);
+			echo "cURL error ({$errno}):\n {$error_message}";
+		}
+		
+		
+		
+		
+		$mydata	=	json_decode($result );
+		
+		
+		
+		
+		//previous data//
+		$full_product_list = array();
+		$loop = new WP_Query(array('post_type' => array('product', ''), 'posts_per_page' => 10000));
+		$productIds	=	array();
+		while ($loop->have_posts()) 
+		{ 
+			$loop->the_post();
+		
+			$theid = get_the_ID();
+			$product = new WC_Product($theid);
+			
+			$tajsols_id = get_post_meta($theid, '_tajsols_id', true);
+			if($tajsols_id!="")
+			{
+				$productIds[]		=	$tajsols_id;
+			}
+		   
+		}
+		
+		//end of previous data//
+		
+		$s=0;
+		foreach($mydata as $product)
+		{
+		
+			if(!in_array($product->bookid,$productIds) )
+			{
+				//print "<pre>";print_r($product);exit;/**/
+				$product->bookname;
+				$user_id	=	"1";
+				$bookid		=	$product->bookid;
+				$name		=	$product->bookname;
+				
+				$desc		=	$product->web_description;
+				$price		=	$product->price;
+				$weight		=	$product->web_weight;
+				
+				$post 		= array('post_author' => $user_id,'post_content' => $desc,'post_status' => "publish",'post_title' => $name,'post_parent' => '','post_type' => "product",);
+			
+				$post_id = wp_insert_post( $post, $wp_error );
+				
+				wp_set_object_terms( $post_id, 'tajsols', 'product_cat' );
+				wp_set_object_terms($post_id, 'simple', 'product_type');
+				
+				update_post_meta( $post_id, '_visibility', 'visible' );
+				update_post_meta( $post_id, '_stock_status', 'instock');
+				
+				update_post_meta( $post_id, '_regular_price', $price );
+				update_post_meta( $post_id, '_sale_price', $price );
+				
+				update_post_meta( $post_id, '_featured', "no" );
+				update_post_meta( $post_id, '_weight', $weight );
+				update_post_meta( $post_id, '_price', $price );
+				
+				update_post_meta( $post_id, '_stock', "10000" );
+				update_post_meta( $post_id, '_product_image_gallery', '');
+				
+				update_post_meta( $post_id, '_tajsols_id', $bookid);
+				
+				if($product->main_img!="")
+				{
+					Generate_Featured_Image( $product->main_img,   $post_id );
+				}
+				if(count($product->images)>0)
+				{
+					agp_process_wooimage( $product->images,   $post_id );
+				}
+			
+			}
+			$s++;
+			
+		} 
+		
+		
+		
+
+		
+		
+		
+		
+	
+	
+
+	return "<h1 style='color:red'>Done!</h1>";
+
+}
+
+add_shortcode('tajsols_img_update', 'tajsols_products_image_update');
+add_shortcode('tajsols_products', 'tajsols_products_fn');
+?>
